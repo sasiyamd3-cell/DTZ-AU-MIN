@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ANU MD — WhatsApp Bot</title>
+<meta name="description" content="ANU MD — a WhatsApp bot by Thilina Anuhas." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Klee+One:wght@600&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #05070f;
+    --ink-2: #0a1226;
+    --ink-3: #111f3d;
+    --sakura: #35d2ff;
+    --sakura-deep: #0a6dff;
+    --lantern: #8b7bff;
+    --lantern-soft: #b9aeff;
+    --paper: #eaf2ff;
+    --muted: #7f93bd;
+    --line: rgba(140,180,255,0.14);
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+
+  body{
+    background: radial-gradient(ellipse 120% 80% at 50% -10%, #16264d 0%, var(--ink) 55%, #05070f 100%);
+    color: var(--paper);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ---------- Ambient sakura petals ---------- */
+  #petals{ position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: rgba(21, 14, 34, 0.7);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand-mini{ display: flex; align-items: center; gap: 10px; }
+  .kanji-badge{
+    width: 34px; height: 34px;
+    border-radius: 11px;
+    background: linear-gradient(160deg, var(--ink-3), var(--ink-2));
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Klee One', cursive;
+    font-size: 17px;
+    color: var(--sakura);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .kanji-badge img{ width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+  .brand-mini .name{
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.01em;
+    color: var(--paper);
+  }
+
+  .burger{
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--ink-3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .burger span{
+    display: block;
+    width: 18px; height: 2px;
+    background: var(--sakura);
+    border-radius: 2px;
+    transition: transform 0.25s ease, opacity 0.2s ease;
+  }
+  .burger.open span:nth-child(1){ transform: translateY(7px) rotate(45deg); }
+  .burger.open span:nth-child(2){ opacity: 0; }
+  .burger.open span:nth-child(3){ transform: translateY(-7px) rotate(-45deg); }
+  .burger:focus-visible{ outline: 2px solid var(--lantern); outline-offset: 2px; }
+
+  /* ---------- Nav menu (slide-down panel) ---------- */
+  .navmenu{
+    position: fixed;
+    top: 73px;
+    right: 20px;
+    z-index: 49;
+    width: min(280px, calc(100vw - 40px));
+    background: linear-gradient(165deg, var(--ink-2), var(--ink) 130%);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: 0 24px 50px -16px rgba(0,0,0,0.6);
+    padding: 10px;
+    transform: translateY(-12px) scale(0.97);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+  }
+  .navmenu.open{
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .navmenu a{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    border-radius: 11px;
+    text-decoration: none;
+    color: var(--paper);
+    font-weight: 600;
+    font-size: 14.5px;
+    transition: background 0.15s ease;
+  }
+  .navmenu a:hover, .navmenu a:focus-visible{ background: var(--ink-3); }
+  .navmenu a:focus-visible{ outline: 2px solid var(--lantern); outline-offset: -2px; }
+  .navmenu .icon{
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    background: var(--ink-3);
+    flex-shrink: 0;
+  }
+  .navmenu .icon.pink{ background: rgba(10,109,255,0.15); color: var(--sakura); }
+  .navmenu .icon.gold{ background: rgba(139,123,255,0.15); color: var(--lantern); }
+  .navmenu .desc{ display: block; font-size: 12px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+  .navmenu .divider{ height: 1px; background: var(--line); margin: 6px 4px; }
+
+  .overlay{
+    position: fixed; inset: 0;
+    background: rgba(10, 7, 16, 0.4);
+    z-index: 48;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+  }
+  .overlay.open{ opacity: 1; pointer-events: auto; }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 9vh 20px 6vh;
+  }
+  .hero-banner{
+    width: 100%;
+    max-width: 560px;
+    border-radius: 20px;
+    margin-bottom: 30px;
+    border: 1px solid var(--line);
+    box-shadow: 0 25px 70px -20px rgba(10,109,255,0.5);
+  }
+  .kanji-big{
+    width: 76px;
+    height: 76px;
+    border-radius: 22px;
+    overflow: hidden;
+    margin-bottom: 18px;
+    border: 1px solid var(--line);
+    box-shadow: 0 0 30px rgba(53,210,255,0.4);
+  }
+  .kanji-big img{ width: 100%; height: 100%; object-fit: cover; }
+  .pill-row{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 14px;
+  }
+  .team-pill{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--lantern-soft);
+    background: rgba(139,123,255,0.1);
+    border: 1px solid rgba(139,123,255,0.3);
+    padding: 6px 14px;
+    border-radius: 999px;
+  }
+  h1.wordmark{
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 800;
+    font-size: clamp(36px, 8vw, 58px);
+    letter-spacing: 0.01em;
+    margin: 0;
+    background: linear-gradient(100deg, var(--paper) 25%, var(--sakura) 70%, var(--lantern) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .version-pill{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--lantern-soft);
+    background: rgba(139,123,255,0.1);
+    border: 1px solid rgba(139,123,255,0.3);
+    padding: 6px 14px;
+    border-radius: 999px;
+  }
+  .tagline{
+    color: var(--muted);
+    font-size: clamp(15px, 2.4vw, 17px);
+    max-width: 480px;
+    margin: 22px 0 34px;
+    line-height: 1.6;
+  }
+
+  .hero-actions{
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn{
+    border: none;
+    border-radius: 12px;
+    padding: 15px 26px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 14.5px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+  }
+  .btn:hover{ transform: translateY(-1px); }
+  .btn.primary{
+    color: #1a0f14;
+    background: linear-gradient(120deg, var(--sakura) 0%, var(--sakura-deep) 100%);
+    box-shadow: 0 10px 24px -10px rgba(10,109,255,0.55);
+  }
+  .btn.ghost{
+    color: var(--lantern-soft);
+    background: transparent;
+    border: 1px solid rgba(139,123,255,0.4);
+  }
+  .btn.ghost:hover{ background: rgba(139,123,255,0.1); }
+
+  /* ---------- Sections ---------- */
+  .section{
+    position: relative;
+    z-index: 1;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 4vh 20px;
+  }
+  .section-eyebrow{
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--lantern);
+    text-align: center;
+    margin: 0 0 10px;
+  }
+  .section-title{
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 700;
+    font-size: clamp(22px, 4vw, 30px);
+    text-align: center;
+    margin: 0 0 38px;
+    color: var(--paper);
+  }
+
+  .feature-grid{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 700px){ .feature-grid{ grid-template-columns: 1fr; } }
+
+  .feature-card{
+    background: linear-gradient(165deg, var(--ink-2), var(--ink) 130%);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 22px 20px;
+  }
+  .feature-card .ficon{
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: var(--ink-3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px;
+    margin-bottom: 14px;
+  }
+  .feature-card h3{
+    font-family: 'Inter', sans-serif;
+    font-size: 15.5px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    color: var(--paper);
+  }
+  .feature-card p{
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* ---------- Owner card ---------- */
+  .owner-card{
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: radial-gradient(ellipse at 0% 0%, rgba(139,123,255,0.12), transparent 60%), linear-gradient(165deg, var(--ink-2), var(--ink) 130%);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 26px 24px;
+  }
+  @media (max-width: 520px){ .owner-card{ flex-direction: column; text-align: center; } }
+  .owner-avatar{
+    width: 64px; height: 64px;
+    flex-shrink: 0;
+    border-radius: 18px;
+    background: linear-gradient(135deg, var(--sakura), var(--lantern));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    color: #1a0f14;
+  }
+  .owner-info .o-label{
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--lantern);
+    margin: 0 0 4px;
+  }
+  .owner-info .o-name{
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 700;
+    font-size: 19px;
+    color: var(--paper);
+    margin: 0 0 6px;
+  }
+  .owner-info .o-sub{
+    font-size: 13.5px;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .owner-links{
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 520px){ .owner-links{ justify-content: center; } }
+  .owner-links a{
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--lantern-soft);
+    text-decoration: none;
+    border: 1px solid rgba(139,123,255,0.35);
+    padding: 7px 13px;
+    border-radius: 999px;
+  }
+  .owner-links a:hover{ background: rgba(139,123,255,0.1); }
+
+  footer{
+    position: relative;
+    z-index: 1;
+    margin-top: 40px;
+    padding: 28px 20px 40px;
+    color: var(--muted);
+    font-size: 12.5px;
+    text-align: center;
+  }
+  footer .mark{ color: var(--sakura); }
+
+  @media (prefers-reduced-motion: reduce){
+    .petal{ animation: none !important; opacity: 0.15 !important; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="petals"></canvas>
+
+<!-- ===================== TOP BAR ===================== -->
+<div class="topbar">
+  <div class="brand-mini">
+    <div class="kanji-badge" aria-hidden="true"><img src="https://raw.githubusercontent.com/NimeshMihiranga-Neno/mezukasite/main/6ebfa279deea35ef3a50bbfe2f0780b1.jpg" alt="ANU MD logo" /></div>
+    <span class="name">ANU MD</span>
+  </div>
+  <button id="burgerBtn" class="burger" aria-label="Open menu" aria-expanded="false" aria-controls="navMenu">
+    <span></span><span></span><span></span>
+  </button>
+</div>
+
+<div id="overlay" class="overlay"></div>
+
+<nav id="navMenu" class="navmenu" aria-label="Main menu">
+  <a href="/pair.html">
+    <span class="icon pink">🔗</span>
+    <span>
+      Connect Bot
+      <span class="desc">Pair your WhatsApp number</span>
+    </span>
+  </a>
+  <div class="divider"></div>
+  <a href="/settings.html">
+    <span class="icon gold">⚙️</span>
+    <span>
+      Settings
+      <span class="desc">Edit your bot's settings</span>
+    </span>
+  </a>
+</nav>
+
+<!-- ===================== HERO ===================== -->
+<section class="hero">
+  <img class="hero-banner" src="https://files.catbox.moe/8pywqr.png" alt="ANU MD banner" />
+  <div class="kanji-big" aria-hidden="true"><img src="https://raw.githubusercontent.com/NimeshMihiranga-Neno/mezukasite/main/6ebfa279deea35ef3a50bbfe2f0780b1.jpg" alt="ANU MD logo" /></div>
+  <h1 class="wordmark">ANU MD</h1>
+  <div class="pill-row">
+    <span class="version-pill">⬡ VERSION V1 · ACTIVE</span>
+    <span class="team-pill">✦ BY ANU TEAM</span>
+  </div>
+  <p class="tagline">A WhatsApp bot that automates your chats, statuses, and groups — pair your number and it's online in seconds.</p>
+  <div class="hero-actions">
+    <a class="btn primary" href="/pair.html">🔗 Connect your number</a>
+    <a class="btn ghost" href="/settings.html">⚙️ Manage settings</a>
+  </div>
+</section>
+
+<!-- ===================== ABOUT THE BOT ===================== -->
+<section class="section">
+  <p class="section-eyebrow">About the bot</p>
+  <h2 class="section-title">What ANU MD does</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="ficon">👁️</div>
+      <h3>Auto status view</h3>
+      <p>ANU MD quietly views your contacts' status updates for you, the moment they're posted.</p>
+    </div>
+    <div class="feature-card">
+      <div class="ficon">🔷</div>
+      <h3>Auto status react</h3>
+      <p>Reacts to statuses with a set of emojis you choose, so you're never left on "seen" only.</p>
+    </div>
+    <div class="feature-card">
+      <div class="ficon">🛡️</div>
+      <h3>Flexible reply modes</h3>
+      <p>Switch between public, private, inbox-only, or groups-only — your bot, your rules.</p>
+    </div>
+    <div class="feature-card">
+      <div class="ficon">🔁</div>
+      <h3>Stays online</h3>
+      <p>Automatic reconnect if your session drops, so the bot keeps working without you checking in.</p>
+    </div>
+    <div class="feature-card">
+      <div class="ficon">🔐</div>
+      <h3>Private by number</h3>
+      <p>Each WhatsApp number gets its own settings, locked behind a password only you receive.</p>
+    </div>
+    <div class="feature-card">
+      <div class="ficon">📰</div>
+      <h3>Newsletter tools</h3>
+      <p>Follows and reacts to channels automatically, keeping your presence active across WhatsApp.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== OWNER ===================== -->
+<section class="section">
+  <p class="section-eyebrow">Built by</p>
+  <h2 class="section-title">The person behind ANU MD</h2>
+  <div class="owner-card">
+    <div class="owner-avatar" aria-hidden="true">TA</div>
+    <div class="owner-info">
+      <p class="o-label">Owner & Developer — Anu Team</p>
+      <p class="o-name">Thilina Anuhas</p>
+      <p class="o-sub">Builds and maintains ANU MD — from the pairing flow to every command the bot runs.</p>
+      <div class="owner-links">
+        <a href="https://whatsapp.com/channel/0029Vb6UR8S8fewn0otjcc0g" target="_blank" rel="noopener">📢 WhatsApp Channel</a>
+        <a href="https://chat.whatsapp.com/BbBrjXNB5mBG5fEvMAbAqF?mode=ems_copy_t" target="_blank" rel="noopener">👥 Support Group</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="mark">🔷</span> ANU MD — your number stays linked until you log out from WhatsApp.
+</footer>
+
+<script>
+(function(){
+  // ---------- Ambient falling petals ----------
+  const canvas = document.getElementById('petals');
+  const ctx = canvas.getContext('2d');
+  let petals = [];
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function resize(){
+    canvas.width = window.innerWidth;
+    canvas.height = document.documentElement.scrollHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function makePetal(){
+    return {
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: 6 + Math.random() * 9,
+      speed: 0.35 + Math.random() * 0.8,
+      drift: (Math.random() - 0.5) * 0.5,
+      rot: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.018,
+      opacity: 0.3 + Math.random() * 0.35
+    };
+  }
+
+  const PETAL_COUNT = reduceMotion ? 0 : (window.innerWidth < 600 ? 14 : 24);
+  for(let i = 0; i < PETAL_COUNT; i++) petals.push(makePetal());
+
+  function drawPetal(p){
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.globalAlpha = p.opacity;
+    const grad = ctx.createLinearGradient(-p.size, -p.size, p.size, p.size);
+    grad.addColorStop(0, '#35d2ff');
+    grad.addColorStop(1, '#0a6dff');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(0, -p.size);
+    ctx.quadraticCurveTo(p.size, -p.size * 0.3, 0, p.size);
+    ctx.quadraticCurveTo(-p.size, -p.size * 0.3, 0, -p.size);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function tick(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for(const p of petals){
+      p.y += p.speed;
+      p.x += p.drift;
+      p.rot += p.rotSpeed;
+      if(p.y > canvas.height + 20){
+        p.y = -20;
+        p.x = Math.random() * canvas.width;
+      }
+      drawPetal(p);
+    }
+    requestAnimationFrame(tick);
+  }
+  if(!reduceMotion) requestAnimationFrame(tick);
+
+  // ---------- Hamburger nav menu ----------
+  const burgerBtn = document.getElementById('burgerBtn');
+  const navMenu = document.getElementById('navMenu');
+  const overlay = document.getElementById('overlay');
+
+  function openMenu(){
+    burgerBtn.classList.add('open');
+    burgerBtn.setAttribute('aria-expanded', 'true');
+    navMenu.classList.add('open');
+    overlay.classList.add('open');
+  }
+  function closeMenu(){
+    burgerBtn.classList.remove('open');
+    burgerBtn.setAttribute('aria-expanded', 'false');
+    navMenu.classList.remove('open');
+    overlay.classList.remove('open');
+  }
+  function toggleMenu(){
+    navMenu.classList.contains('open') ? closeMenu() : openMenu();
+  }
+
+  burgerBtn.addEventListener('click', toggleMenu);
+  overlay.addEventListener('click', closeMenu);
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') closeMenu();
+  });
+})();
+</script>
+
+</body>
+</html>
